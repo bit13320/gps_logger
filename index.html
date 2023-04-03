@@ -1,89 +1,88 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-	<title>GPS Speedometer</title>
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<style>
-		#speed {
-			font-size: 2em;
-			text-align: center;
-			margin-top: 50px;
-		}
-	</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GPS Speed and Altitude Tracker</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+    }
+
+    button {
+      font-size: 1.2rem;
+      padding: 10px 20px;
+    }
+  </style>
 </head>
 <body>
-	<div id="speed">Calculating speed...</div>
-	<script>var distance = 0;
-var altitude = 0;
-var prevPosition = null;
-var recording = false;
+  <h1>GPS Speed and Altitude Tracker</h1>
+  <p>Speed: <span id="speed">0</span> km/h</p>
+  <p>Altitude: <span id="altitude">0</span> meters</p>
+  <button id="recordBtn">Start Recording Distance and Altitude Change</button>
+  <p>Traveled Distance: <span id="distance">0</span> meters</p>
+  <p>Altitude Change: <span id="altitudeChange">0</span> meters</p>
 
-function startRecording() {
-	recording = true;
-	prevPosition = null;
-	distance = 0;
-	altitude = 0;
-	document.getElementById("distance").innerHTML = "0 m";
-	document.getElementById("altitude").innerHTML = "0 m";
-}
+  <script>
+    const speedEl = document.getElementById('speed');
+    const altitudeEl = document.getElementById('altitude');
+    const recordBtn = document.getElementById('recordBtn');
+    const distanceEl = document.getElementById('distance');
+    const altitudeChangeEl = document.getElementById('altitudeChange');
 
-function stopRecording() {
-	recording = false;
-}
+    let watchId;
+    let recording = false;
+    let prevPosition = null;
+    let distance = 0;
+    let altitudeChange = 0;
 
-if (navigator.geolocation) {
-	navigator.geolocation.watchPosition(function(position) {
-		var speed = position.coords.speed;
-		var alt = position.coords.altitude;
-		if (speed === null) {
-			document.getElementById("speed").innerHTML = "Speed data not available";
-		} else {
-			document.getElementById("speed").innerHTML = (speed * 3.6).toFixed(2) + " km/h";
-		}
-		if (alt === null) {
-			document.getElementById("altitude").innerHTML = "Altitude data not available";
-		} else {
-			document.getElementById("altitude").innerHTML = alt.toFixed(2) + " m";
-		}
-		if (recording) {
-			if (prevPosition !== null) {
-				var dist = getDistanceFromLatLonInM(prevPosition.coords.latitude, prevPosition.coords.longitude, position.coords.latitude, position.coords.longitude);
-				distance += dist;
-				document.getElementById("distance").innerHTML = distance.toFixed(2) + " m";
-				var altDiff = position.coords.altitude - prevPosition.coords.altitude;
-				altitude += Math.abs(altDiff);
-				document.getElementById("altitude-change").innerHTML = altitude.toFixed(2) + " m";
-			}
-			prevPosition = position;
-		}
-	}, function(error) {
-		document.getElementById("speed").innerHTML = "Error getting speed data: " + error.message;
-		document.getElementById("altitude").innerHTML = "Error getting altitude data: " + error.message;
-	});
-} else {
-	document.getElementById("speed").innerHTML = "Geolocation not supported";
-	document.getElementById("altitude").innerHTML = "Geolocation not supported";
-}
+    function startWatching() {
+      if ('geolocation' in navigator) {
+        watchId = navigator.geolocation.watchPosition((position) => {
+          const { latitude, longitude, altitude, speed } = position.coords;
+          speedEl.textContent = (speed * 3.6).toFixed(2); // Convert speed from m/s to km/h
+          altitudeEl.textContent = altitude.toFixed(2);
 
-function getDistanceFromLatLonInM(lat1, lon1, lat2, lon2) {
-	var R = 6371e3; // metres
-	var φ1 = lat1 * Math.PI / 180;
-	var φ2 = lat2 * Math.PI / 180;
-	var Δφ = (lat2 - lat1) * Math.PI / 180;
-	var Δλ =
-			navigator.geolocation.watchPosition(function(position) {
-				var speed = position.coords.speed;
-				if (speed === null) {
-					document.getElementById("speed").innerHTML = "Speed data not available";
-				} else {
-					document.getElementById("speed").innerHTML = speed.toFixed(2) + " m/s";
-				}
-			}, function(error) {
-				document.getElementById("speed").innerHTML = "Error getting speed data: " + error.message;
-			});
-		} else {
-			document.getElementById("speed").innerHTML = "Geolocation not supported";
-		}
-	</script>
+          if (recording && prevPosition) {
+            distance += haversineDistance(prevPosition, { latitude, longitude });
+            distanceEl.textContent = distance.toFixed(2);
+
+            const currentAltitudeChange = altitude - prevPosition.altitude;
+            altitudeChange += currentAltitudeChange;
+            altitudeChangeEl.textContent = altitudeChange.toFixed(2);
+          }
+
+          prevPosition = { latitude, longitude, altitude };
+        }, (error) => {
+          console.error(error);
+        }, { enableHighAccuracy: true });
+      } else {
+        alert('Geolocation is not supported by your browser.');
+      }
+    }
+
+    function haversineDistance(coords1, coords2) {
+      const R = 6371e3; // Earth's radius in meters
+      const lat1 = coords1.latitude * Math.PI / 180;
+      const lat2 = coords2.latitude * Math.PI / 180;
+      const deltaLat = (coords2.latitude - coords1.latitude) * Math.PI / 180;
+      const deltaLng = (coords2.longitude - coords1.longitude) * Math.PI / 180;
+
+      const a = Math.sin(deltaLat / 2) * Math.sin(deltaLat / 2)
+        + Math.cos(lat1) * Math.cos(lat2)
+        * Math.sin(deltaLng / 2) * Math.sin(deltaLng / 2);
+
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return R * c; // Distance in meters
+    }
+
+    recordBtn.addEventListener('click', () => {
+      recording = !recording;
+      recordBtn.textContent = recording ? 'Stop Recording' : 'Start Recording Distance and Altitude Change';
+    });
+
+    startWatching();
+  </script>
 </body>
 </html>
