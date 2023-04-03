@@ -36,28 +36,35 @@
     let prevPosition = null;
     let distance = 0;
     let altitudeChange = 0;
+// Initialize a distance threshold of 1 meters
+const distanceThreshold = 1;
 
-    function startWatching() {
-      if ('geolocation' in navigator) {
-        watchId = navigator.geolocation.watchPosition((position) => {
-          const { latitude, longitude, altitude, speed } = position.coords;
-          speedEl.textContent = (speed * 3.6).toFixed(2); // Convert speed from m/s to km/h
-          altitudeEl.textContent = altitude.toFixed(2);
+function startWatching() {
+  if ('geolocation' in navigator) {
+    watchId = navigator.geolocation.watchPosition((position) => {
+      const { latitude, longitude, altitude, speed } = position.coords;
+      speedEl.textContent = (speed * 3.6).toFixed(2); // Convert speed from m/s to km/h
+      altitudeEl.textContent = altitude.toFixed(2);
 
-          if (recording && prevPosition) {
-            distance += haversineDistance(prevPosition, { latitude, longitude });
-            distanceEl.textContent = distance.toFixed(2);
+      if (recording && prevPosition) {
+        const currentDistance = haversineDistance(prevPosition, { latitude, longitude });
 
-            const currentAltitudeChange = altitude - prevPosition.altitude;
-            altitudeChange += currentAltitudeChange;
-            altitudeChangeEl.textContent = altitudeChange.toFixed(2);
-          }
+        // Only update the distance if the current distance is greater than the threshold
+        if (currentDistance >= distanceThreshold) {
+          distance += currentDistance;
+          distanceEl.textContent = distance.toFixed(2);
+        }
 
-          prevPosition = { latitude, longitude, altitude };
-        }, (error) => {
-          console.error(error);
-        }, { enableHighAccuracy: true });
-      } else {
+        const currentAltitudeChange = altitude - prevPosition.altitude;
+        altitudeChange += currentAltitudeChange;
+        altitudeChangeEl.textContent = altitudeChange.toFixed(2);
+      }
+
+      prevPosition = { latitude, longitude, altitude };
+    }, (error) => {
+      console.error(error);
+    }, { enableHighAccuracy: true });
+  } else {
         alert('Geolocation is not supported by your browser.');
       }
     }
