@@ -15,6 +15,16 @@
 	<div id="speed">Calculating speed...</div>
 	<script>
 		if ("geolocation" in navigator) {
+            navigator.permissions.query({name:'geolocation'}).then(function(result) {
+                  if (result.state === 'granted') {
+                    console.log('Permission granted');
+                  } else if (result.state === 'prompt') {
+                    console.log('Permission prompt');
+                  } else {
+                    console.log('Permission denied');
+                  }
+                });
+            
 			navigator.geolocation.watchPosition(function(position) {
 				var speed = position.coords.speed;
 				if (speed === null) {
