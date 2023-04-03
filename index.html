@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>GPS Speedometer</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<style>
+		#speed {
+			font-size: 5em;
+			text-align: center;
+			margin-top: 50px;
+		}
+	</style>
+</head>
+<body>
+	<div id="speed">Calculating speed...</div>
+	<script>
+		if ("geolocation" in navigator) {
+			navigator.geolocation.watchPosition(function(position) {
+				var speed = position.coords.speed;
+				if (speed === null) {
+					document.getElementById("speed").innerHTML = "Speed data not available";
+				} else {
+					document.getElementById("speed").innerHTML = speed.toFixed(2) + " m/s";
+				}
+			}, function(error) {
+				document.getElementById("speed").innerHTML = "Error getting speed data: " + error.message;
+			});
+		} else {
+			document.getElementById("speed").innerHTML = "Geolocation not supported";
+		}
+	</script>
+</body>
+</html>
